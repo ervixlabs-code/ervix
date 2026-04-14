@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import {
@@ -265,7 +265,7 @@ function buildPayload(form: FormState) {
   }
 }
 
-export default function ContactPageContentCreatePage() {
+function ContactPageContentCreatePageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get("id")
@@ -1197,7 +1197,7 @@ export default function ContactPageContentCreatePage() {
                     </div>
                   </div>
 
-                  <div className="xl:sticky xl:top-6 xl:self-start">
+                  <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
                     <div className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
                       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
                         <div className="flex items-center gap-2 text-slate-900">
@@ -1467,5 +1467,31 @@ export default function ContactPageContentCreatePage() {
         </main>
       </div>
     </div>
+  )
+}
+
+function PageFallback() {
+  return (
+    <div className="min-h-screen bg-[#f6f8fc] text-slate-900">
+      <Sidebar />
+      <div className="pl-0 lg:pl-[300px]">
+        <main className="mx-auto max-w-[1780px] px-4 py-6 sm:px-6">
+          <div className="flex min-h-[300px] items-center justify-center rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-3 text-slate-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm font-medium">Yükleniyor...</span>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default function ContactPageContentCreatePage() {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <ContactPageContentCreatePageInner />
+    </Suspense>
   )
 }
