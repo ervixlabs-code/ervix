@@ -3,8 +3,8 @@
 export const dynamic = "force-dynamic"
 
 import Link from "next/link"
-import { Suspense, useEffect, useMemo, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import {
   ArrowRight,
@@ -265,11 +265,12 @@ function buildPayload(form: FormState) {
   }
 }
 
-function ContactPageContentCreatePageInner() {
+export default function ContactPageContentCreatePage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const editId = searchParams.get("id")
-  const slugParam = searchParams.get("slug")
+
+  const [editId, setEditId] = useState<string | null>(null)
+  const [slugParam, setSlugParam] = useState<string | null>(null)
+  const [queryReady, setQueryReady] = useState(false)
 
   const [form, setForm] = useState<FormState>(defaultState)
   const [submitting, setSubmitting] = useState(false)
@@ -279,12 +280,20 @@ function ContactPageContentCreatePageInner() {
   const [success, setSuccess] = useState("")
   const [activeSlideIndex, setActiveSlideIndex] = useState(0)
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setEditId(params.get("id"))
+    setSlugParam(params.get("slug"))
+    setQueryReady(true)
+  }, [])
+
   const isEditMode = !!form.id || !!editId
 
   useEffect(() => {
     let ignore = false
 
     async function loadData() {
+      if (!queryReady) return
       if (!editId && !slugParam) return
 
       try {
@@ -310,6 +319,7 @@ function ContactPageContentCreatePageInner() {
         }
 
         const data = await res.json()
+
         if (!ignore) {
           setForm(mapApiToForm(data))
           setActiveSlideIndex(0)
@@ -327,10 +337,11 @@ function ContactPageContentCreatePageInner() {
     }
 
     loadData()
+
     return () => {
       ignore = true
     }
-  }, [editId, slugParam])
+  }, [editId, slugParam, queryReady])
 
   const activeSlide =
     form.heroSlides[activeSlideIndex] || form.heroSlides[0] || defaultSlide
@@ -374,7 +385,9 @@ function ContactPageContentCreatePageInner() {
       const normalized = mapApiToForm(data)
 
       setForm(normalized)
-      setSuccess(form.id ? "Kayıt başarıyla güncellendi." : "Kayıt başarıyla oluşturuldu.")
+      setSuccess(
+        form.id ? "Kayıt başarıyla güncellendi." : "Kayıt başarıyla oluşturuldu."
+      )
 
       if (!form.id && data?.id) {
         router.replace(`/contact/page-content/create?id=${data.id}`)
@@ -427,7 +440,9 @@ function ContactPageContentCreatePageInner() {
         heroSlides: next.length ? next : [defaultSlide],
       }
     })
-    setActiveSlideIndex((prev) => Math.max(0, Math.min(prev, form.heroSlides.length - 2)))
+    setActiveSlideIndex((prev) =>
+      Math.max(0, Math.min(prev, form.heroSlides.length - 2))
+    )
   }
 
   function updateContactCard(index: number, patch: Partial<ContactCardItem>) {
@@ -442,7 +457,10 @@ function ContactPageContentCreatePageInner() {
   function addContactCard() {
     setForm((prev) => ({
       ...prev,
-      contactCards: [...prev.contactCards, { type: "email", label: "", value: "" }],
+      contactCards: [
+        ...prev.contactCards,
+        { type: "email", label: "", value: "" },
+      ],
     }))
   }
 
@@ -504,16 +522,21 @@ function ContactPageContentCreatePageInner() {
                     </div>
 
                     <div className="text-xs text-slate-400">
-                      {isEditMode ? "PATCH /api/contact-page-contents/{id}" : "POST /api/contact-page-contents"}
+                      {isEditMode
+                        ? "PATCH /api/contact-page-contents/{id}"
+                        : "POST /api/contact-page-contents"}
                     </div>
                   </div>
 
                   <h1 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-900 sm:text-[30px]">
-                    {isEditMode ? "Contact Sayfa İçeriğini Düzenle" : "Yeni Contact Sayfa İçeriği"}
+                    {isEditMode
+                      ? "Contact Sayfa İçeriğini Düzenle"
+                      : "Yeni Contact Sayfa İçeriği"}
                   </h1>
 
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                    Input alanları ve preview yan yana durur. Tek bir üst action alanı vardır, ekstra topbar görünmez.
+                    Input alanları ve preview yan yana durur. Tek bir üst action
+                    alanı vardır, ekstra topbar görünmez.
                   </p>
                 </div>
 
@@ -528,8 +551,12 @@ function ContactPageContentCreatePageInner() {
                       key={item.label}
                       className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center"
                     >
-                      <div className="text-lg font-bold text-slate-900">{item.value}</div>
-                      <div className="text-[11px] text-slate-500">{item.label}</div>
+                      <div className="text-lg font-bold text-slate-900">
+                        {item.value}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {item.label}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -578,7 +605,10 @@ function ContactPageContentCreatePageInner() {
                           <input
                             value={form.slug}
                             onChange={(e) =>
-                              setForm((prev) => ({ ...prev, slug: e.target.value }))
+                              setForm((prev) => ({
+                                ...prev,
+                                slug: e.target.value,
+                              }))
                             }
                             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-violet-300"
                             placeholder="contact-page"
@@ -592,7 +622,10 @@ function ContactPageContentCreatePageInner() {
                           <input
                             value={form.title}
                             onChange={(e) =>
-                              setForm((prev) => ({ ...prev, title: e.target.value }))
+                              setForm((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                              }))
                             }
                             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-violet-300"
                             placeholder="Contact Page Content"
@@ -675,7 +708,9 @@ function ContactPageContentCreatePageInner() {
                                 <input
                                   value={slide.eyebrow}
                                   onChange={(e) =>
-                                    updateSlide(index, { eyebrow: e.target.value })
+                                    updateSlide(index, {
+                                      eyebrow: e.target.value,
+                                    })
                                   }
                                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-violet-300"
                                 />
@@ -718,7 +753,9 @@ function ContactPageContentCreatePageInner() {
                                   rows={4}
                                   value={slide.description}
                                   onChange={(e) =>
-                                    updateSlide(index, { description: e.target.value })
+                                    updateSlide(index, {
+                                      description: e.target.value,
+                                    })
                                   }
                                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-violet-300"
                                 />
@@ -791,7 +828,9 @@ function ContactPageContentCreatePageInner() {
                                 <input
                                   value={slide.panelTitle}
                                   onChange={(e) =>
-                                    updateSlide(index, { panelTitle: e.target.value })
+                                    updateSlide(index, {
+                                      panelTitle: e.target.value,
+                                    })
                                   }
                                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-violet-300"
                                 />
@@ -831,7 +870,10 @@ function ContactPageContentCreatePageInner() {
                           <input
                             value={form.formHeader}
                             onChange={(e) =>
-                              setForm((prev) => ({ ...prev, formHeader: e.target.value }))
+                              setForm((prev) => ({
+                                ...prev,
+                                formHeader: e.target.value,
+                              }))
                             }
                             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-violet-300"
                           />
@@ -844,7 +886,10 @@ function ContactPageContentCreatePageInner() {
                           <input
                             value={form.formTitle}
                             onChange={(e) =>
-                              setForm((prev) => ({ ...prev, formTitle: e.target.value }))
+                              setForm((prev) => ({
+                                ...prev,
+                                formTitle: e.target.value,
+                              }))
                             }
                             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-violet-300"
                           />
@@ -976,7 +1021,9 @@ function ContactPageContentCreatePageInner() {
                                 <input
                                   value={card.label}
                                   onChange={(e) =>
-                                    updateContactCard(index, { label: e.target.value })
+                                    updateContactCard(index, {
+                                      label: e.target.value,
+                                    })
                                   }
                                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-violet-300"
                                 />
@@ -989,7 +1036,9 @@ function ContactPageContentCreatePageInner() {
                                 <input
                                   value={card.value}
                                   onChange={(e) =>
-                                    updateContactCard(index, { value: e.target.value })
+                                    updateContactCard(index, {
+                                      value: e.target.value,
+                                    })
                                   }
                                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-violet-300"
                                 />
@@ -1059,7 +1108,9 @@ function ContactPageContentCreatePageInner() {
                                 <input
                                   value={step.title}
                                   onChange={(e) =>
-                                    updateProcessStep(index, { title: e.target.value })
+                                    updateProcessStep(index, {
+                                      title: e.target.value,
+                                    })
                                   }
                                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-violet-300"
                                 />
@@ -1202,7 +1253,9 @@ function ContactPageContentCreatePageInner() {
                       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
                         <div className="flex items-center gap-2 text-slate-900">
                           <Eye className="h-4 w-4 text-violet-600" />
-                          <span className="text-sm font-semibold">Canlı Preview</span>
+                          <span className="text-sm font-semibold">
+                            Canlı Preview
+                          </span>
                         </div>
 
                         <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
@@ -1264,14 +1317,16 @@ function ContactPageContentCreatePageInner() {
                               </p>
 
                               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                                {["Discovery", "Planning", "Delivery"].map((item) => (
-                                  <div
-                                    key={item}
-                                    className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/75"
-                                  >
-                                    {item}
-                                  </div>
-                                ))}
+                                {["Discovery", "Planning", "Delivery"].map(
+                                  (item) => (
+                                    <div
+                                      key={item}
+                                      className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/75"
+                                    >
+                                      {item}
+                                    </div>
+                                  )
+                                )}
                               </div>
 
                               <div className="mt-6 flex items-center gap-2">
@@ -1316,7 +1371,9 @@ function ContactPageContentCreatePageInner() {
                               </div>
 
                               <div>
-                                <p className="mb-3 text-sm text-white/70">Proje Tipi</p>
+                                <p className="mb-3 text-sm text-white/70">
+                                  Proje Tipi
+                                </p>
                                 <div className="flex flex-wrap gap-2">
                                   {form.projectTypes.map((item, index) => (
                                     <span
@@ -1356,7 +1413,9 @@ function ContactPageContentCreatePageInner() {
                               </div>
 
                               <div>
-                                <p className="mb-3 text-sm text-white/70">Tahmini Bütçe</p>
+                                <p className="mb-3 text-sm text-white/70">
+                                  Tahmini Bütçe
+                                </p>
                                 <div className="flex flex-wrap gap-2">
                                   {form.budgets.map((item, index) => (
                                     <span
@@ -1431,7 +1490,8 @@ function ContactPageContentCreatePageInner() {
                                             {step.title || "Adım başlığı"}
                                           </div>
                                           <p className="mt-2 text-sm leading-7 text-white/58">
-                                            {step.description || "Adım açıklaması"}
+                                            {step.description ||
+                                              "Adım açıklaması"}
                                           </p>
                                         </div>
                                       </div>
@@ -1447,7 +1507,8 @@ function ContactPageContentCreatePageInner() {
                               </div>
 
                               <p className="mt-4 text-sm leading-7 text-white/70">
-                                {form.quickNoteDescription || "Quick note açıklaması"}
+                                {form.quickNoteDescription ||
+                                  "Quick note açıklaması"}
                               </p>
 
                               <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-white">
@@ -1467,31 +1528,5 @@ function ContactPageContentCreatePageInner() {
         </main>
       </div>
     </div>
-  )
-}
-
-function PageFallback() {
-  return (
-    <div className="min-h-screen bg-[#f6f8fc] text-slate-900">
-      <Sidebar />
-      <div className="pl-0 lg:pl-[300px]">
-        <main className="mx-auto max-w-[1780px] px-4 py-6 sm:px-6">
-          <div className="flex min-h-[300px] items-center justify-center rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-            <div className="flex items-center gap-3 text-slate-500">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm font-medium">Yükleniyor...</span>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  )
-}
-
-export default function ContactPageContentCreatePage() {
-  return (
-    <Suspense fallback={<PageFallback />}>
-      <ContactPageContentCreatePageInner />
-    </Suspense>
   )
 }
